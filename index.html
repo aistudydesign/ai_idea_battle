@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아이디어 배틀</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f3;
+      --bg-info: #e6f1fb;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b68;
+      --text-info: #0c447c;
+      --text-danger: #a32d2d;
+      --border-light: rgba(0,0,0,0.12);
+      --border-medium: rgba(0,0,0,0.22);
+      --border-info: #378add;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1c;
+        --bg-secondary: #2a2a28;
+        --bg-info: #042c53;
+        --text-primary: #f0efe8;
+        --text-secondary: #9e9d98;
+        --text-info: #85b7eb;
+        --text-danger: #f09595;
+        --border-light: rgba(255,255,255,0.1);
+        --border-medium: rgba(255,255,255,0.2);
+        --border-info: #378add;
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+    .page-title { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+    .page-sub { font-size: 15px; color: var(--text-secondary); margin-bottom: 2rem; }
+
+    .apikey-section {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .apikey-section label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+    .apikey-row { display: flex; gap: 8px; }
+    .apikey-row input {
+      flex: 1; height: 36px; padding: 0 10px;
+      border: 0.5px solid var(--border-light); border-radius: var(--radius-md);
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-size: 14px; font-family: var(--font); outline: none;
+    }
+    .apikey-row input:focus { border-color: var(--border-info); }
+    .save-btn {
+      height: 36px; padding: 0 14px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-medium); background: var(--bg-primary);
+      color: var(--text-primary); font-size: 13px; cursor: pointer; font-family: var(--font);
+    }
+    .save-btn:hover { background: var(--bg-secondary); }
+    .apikey-hint { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+    .apikey-hint a { color: var(--text-info); }
+
+    .vs-grid {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      gap: 14px; align-items: start; margin-bottom: 1rem;
+    }
+    .idea-card {
+      background: var(--bg-primary); border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    }
+    .idea-label {
+      font-size: 12px; font-weight: 600; margin-bottom: 8px;
+      padding: 4px 10px; border-radius: var(--radius-md); display: inline-block;
+    }
+    .label-a { background: #e6f1fb; color: #0c447c; }
+    .label-b { background: #faece7; color: #712b13; }
+    .idea-card textarea {
+      width: 100%; min-height: 100px; resize: vertical;
+      border: 0.5px solid var(--border-light); border-radius: var(--radius-md);
+      padding: 10px; font-family: var(--font); font-size: 14px;
+      color: var(--text-primary); background: var(--bg-secondary);
+      outline: none; line-height: 1.6;
+    }
+    .idea-card textarea:focus { border-color: var(--border-info); }
+    .vs-sep {
+      display: flex; align-items: center; justify-content: center;
+      padding-top: 2.4rem; font-size: 18px; font-weight: 600; color: var(--text-secondary);
+    }
+
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .controls select {
+      height: 38px; padding: 0 12px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-light); background: var(--bg-primary);
+      color: var(--text-primary); font-size: 14px; font-family: var(--font);
+      outline: none; cursor: pointer;
+    }
+    .battle-btn {
+      height: 38px; padding: 0 22px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-medium); background: var(--bg-primary);
+      color: var(--text-primary); font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); transition: background 0.15s, transform 0.1s;
+    }
+    .battle-btn:hover { background: var(--bg-secondary); }
+    .battle-btn:active { transform: scale(0.98); }
+    .battle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .loading-bar { height: 3px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden; margin: 1.5rem 0 1rem; }
+    .loading-bar-inner { height: 100%; width: 30%; background: var(--border-info); border-radius: 2px; animation: slide 1.2s ease-in-out infinite; }
+    @keyframes slide { 0%{transform:translateX(-120%)} 100%{transform:translateX(480%)} }
+    .loading-text { font-size: 14px; color: var(--text-secondary); }
+
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .result-card {
+      background: var(--bg-primary); border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    }
+    .result-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .result-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .tag { font-size: 12px; padding: 3px 8px; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border-light); }
+
+    .verdict-card {
+      background: var(--bg-primary); border: 2px solid var(--border-info);
+      border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+    }
+    .verdict-badge { font-size: 12px; font-weight: 600; background: var(--bg-info); color: var(--text-info); padding: 4px 10px; border-radius: var(--radius-md); display: inline-block; margin-bottom: 10px; }
+    .verdict-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .verdict-reason { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+
+    .error-msg { font-size: 14px; color: var(--text-danger); padding: 12px; background: var(--bg-primary); border-radius: var(--radius-md); border: 0.5px solid var(--border-light); }
+
+    @media (max-width: 560px) {
+      .vs-grid { grid-template-columns: 1fr; }
+      .vs-sep { padding: 0; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+
+    .history-section { margin-top: 2.5rem; }
+    .history-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .history-clear { font-size: 12px; font-weight: 400; color: var(--text-secondary); cursor: pointer; background: none; border: none; font-family: var(--font); padding: 0; }
+    .history-clear:hover { color: var(--text-danger); }
+    .history-item { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+    .history-item:hover { border-color: var(--border-medium); }
+    .history-item-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .history-vs { font-size: 13px; color: var(--text-secondary); flex: 1; }
+    .history-cat { font-size: 12px; padding: 2px 8px; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border-light); white-space: nowrap; flex-shrink: 0; }
+    .history-date { font-size: 12px; color: var(--text-secondary); }
+    .history-delete { font-size: 12px; color: var(--text-secondary); background: none; border: none; cursor: pointer; font-family: var(--font); padding: 0 0 0 8px; flex-shrink: 0; }
+    .history-delete:hover { color: var(--text-danger); }
+    .history-detail { margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--border-light); display: none; }
+    .history-item.open .history-detail { display: block; }
+    .history-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .history-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 10px 12px; }
+    .history-card h4 { font-size: 12px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .history-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .history-verdict { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 10px 12px; }
+    .history-verdict p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    .custom-select { position: relative; width: 100%; margin-bottom: 1rem; }
+    .custom-select-trigger {
+      width: 100%; height: 42px; padding: 0 14px;
+      border: 0.5px solid var(--border-light); border-radius: var(--radius-md);
+      background: var(--bg-primary); color: var(--text-primary);
+      font-size: 14px; font-family: var(--font); cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      box-sizing: border-box;
+    }
+    .custom-select-trigger:hover { border-color: var(--border-medium); }
+    .custom-select-trigger .trigger-label { font-weight: 500; white-space: nowrap; }
+    .custom-select-trigger .trigger-criteria { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: right; }
+    .custom-select-trigger .trigger-arrow { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+    .custom-select-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--bg-primary); border: 0.5px solid var(--border-medium);
+      border-radius: var(--radius-lg); z-index: 100; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .custom-select.open .custom-select-dropdown { display: block; }
+    .custom-select-option {
+      padding: 10px 14px; cursor: pointer; display: flex; flex-direction: row; align-items: center; gap: 8px;
+      border-bottom: 0.5px solid var(--border-light);
+    }
+    .custom-select-option:last-child { border-bottom: none; }
+    .custom-select-option:hover { background: var(--bg-secondary); }
+    .custom-select-option.selected { background: var(--bg-info); }
+    .custom-select-option .opt-name { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; flex-shrink: 0; }
+    .custom-select-option .opt-criteria { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: auto; text-align: right; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="page-title">⚔️ 아이디어 배틀</p>
+    <p class="page-sub">두 아이디어를 입력하면 AI가 장단점을 분석하고 승자를 판정합니다</p>
+
+    <div class="apikey-section">
+      <label>Google Gemini API Key</label>
+      <div class="apikey-row">
+        <input type="password" id="apiKey" placeholder="AIza..." />
+        <button class="save-btn" onclick="saveKey()">저장</button>
+      </div>
+      <p class="apikey-hint">
+        무료 키 발급 (구글 계정 필요):
+        <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com → Get API Key →</a>
+        &nbsp;키는 이 탭에만 임시 저장됩니다.
+      </p>
+    </div>
+
+    <hr style="border: none; border-top: 0.5px solid var(--border-light); margin-bottom: 1.5rem;">
+
+    <div class="custom-select" id="customSelect">
+      <div class="custom-select-trigger" onclick="toggleSelect()">
+        <span class="trigger-label" id="triggerLabel">일반</span>
+        <span class="trigger-criteria" id="triggerCriteria">실현 가능성, 독창성, 기대 효과를 기준으로 평가합니다.</span>
+        <span class="trigger-arrow">▼</span>
+      </div>
+      <div class="custom-select-dropdown" id="selectDropdown">
+        <div class="custom-select-option selected" onclick="selectCategory('일반','실현 가능성, 독창성, 기대 효과를 기준으로 평가합니다.')">
+          <span class="opt-name">일반</span>
+          <span class="opt-criteria">실현 가능성, 독창성, 기대 효과를 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('AI 스터디 산출물','학습 효과, 구현 난이도, 활용 가능성을 기준으로 평가합니다.')">
+          <span class="opt-name">AI 스터디 산출물</span>
+          <span class="opt-criteria">학습 효과, 구현 난이도, 활용 가능성을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('넥슨 플랫폼 서비스','유저 경험, 플랫폼 적합성, 비즈니스 임팩트를 기준으로 평가합니다.')">
+          <span class="opt-name">넥슨 플랫폼 서비스</span>
+          <span class="opt-criteria">유저 경험, 플랫폼 적합성, 비즈니스 임팩트를 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('기획','목표 명확성, 실행 가능성, 이해관계자 설득력을 기준으로 평가합니다.')">
+          <span class="opt-name">기획</span>
+          <span class="opt-criteria">목표 명확성, 실행 가능성, 이해관계자 설득력을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('디자인','사용자 경험, 심미성, 일관성 및 확장성을 기준으로 평가합니다.')">
+          <span class="opt-name">디자인</span>
+          <span class="opt-criteria">사용자 경험, 심미성, 일관성 및 확장성을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('개발','기술 구현 난이도, 유지보수성, 확장성을 기준으로 평가합니다.')">
+          <span class="opt-name">개발</span>
+          <span class="opt-criteria">기술 구현 난이도, 유지보수성, 확장성을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('마케팅','타겟 도달력, 브랜드 임팩트, 비용 효율을 기준으로 평가합니다.')">
+          <span class="opt-name">마케팅</span>
+          <span class="opt-criteria">타겟 도달력, 브랜드 임팩트, 비용 효율을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('사업','수익성, 시장 규모, 경쟁 우위를 기준으로 평가합니다.')">
+          <span class="opt-name">사업</span>
+          <span class="opt-criteria">수익성, 시장 규모, 경쟁 우위를 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('워크샵','참여 유도, 학습 효과, 현장 실행 가능성을 기준으로 평가합니다.')">
+          <span class="opt-name">워크샵</span>
+          <span class="opt-criteria">참여 유도, 학습 효과, 현장 실행 가능성을 기준으로 평가합니다.</span>
+        </div>
+        <div class="custom-select-option" onclick="selectCategory('일상생활','편의성, 지속 가능성, 삶의 질 향상을 기준으로 평가합니다.')">
+          <span class="opt-name">일상생활</span>
+          <span class="opt-criteria">편의성, 지속 가능성, 삶의 질 향상을 기준으로 평가합니다.</span>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="category" value="일반">
+
+    <div class="vs-grid">
+      <div class="idea-card">
+        <span class="idea-label label-a">아이디어 A</span>
+        <textarea id="ideaA" placeholder="예: 사내 점심 메뉴 추천 앱을 만든다"></textarea>
+      </div>
+      <div class="vs-sep">vs</div>
+      <div class="idea-card">
+        <span class="idea-label label-b">아이디어 B</span>
+        <textarea id="ideaB" placeholder="예: 팀원 칭찬 게시판 앱을 만든다"></textarea>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <button class="battle-btn" id="battleBtn" onclick="startBattle()" style="height: 48px; padding: 0 36px; font-size: 16px;">⚔️ 배틀 시작</button>
+    </div>
+
+    <div id="resultArea"></div>
+    <div id="historyArea"></div>
+  </div>
+
+  <script>
+
+    const DB_URL = "https://ideabattle-9bf27-default-rtdb.firebaseio.com";
+
+    async function saveHistory(ideaA, ideaB, category, r) {
+      const entry = {
+        ideaA, ideaB, category, result: r,
+        date: new Date().toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+      };
+      await fetch(DB_URL + '/battles.json', {
+        method: 'POST',
+        body: JSON.stringify(entry)
+      });
+    }
+
+    async function renderHistory() {
+      const res = await fetch(DB_URL + '/battles.json');
+      const data = await res.json();
+      const list = data ? Object.entries(data).map(([key, val]) => ({...val, _key: key})).reverse().slice(0, 20) : [];
+      (function() {
+      const area = document.getElementById('historyArea');
+      if (!list.length) { area.innerHTML = ''; return; }
+      area.innerHTML = `
+        <div class="history-section">
+          <div class="history-title">
+            이전 배틀 기록
+            <button class="history-clear" onclick="clearHistory()">전체 삭제</button>
+          </div>
+          ${list.map((item, i) => {
+            const winLabel = item.result.winner === 'A'
+              ? '<span class="idea-label label-a" style="font-size:11px;">A 승</span>'
+              : '<span class="idea-label label-b" style="font-size:11px;">B 승</span>';
+            return `
+            <div class="history-item" id="hist-${i}">
+              <div class="history-item-header" onclick="event.stopPropagation()">
+                ${winLabel}
+                ${item.category ? `<span class="history-cat">${item.category}</span>` : ''}
+                <span class="history-vs" onclick="toggleHistory(${i})" style="cursor:pointer;">${item.ideaA} vs ${item.ideaB}</span>
+                <span class="history-date">${item.date}</span>
+                <button class="history-delete" onclick="deleteHistory('${item._key}')" title="삭제">✕</button>
+              </div>
+              <div class="history-detail">
+                <div class="history-result-grid">
+                  <div class="history-card">
+                    <h4><span class="idea-label label-a" style="font-size:10px;">A</span> 장점</h4>
+                    <p>${item.result.ideaA.pros}</p>
+                  </div>
+                  <div class="history-card">
+                    <h4><span class="idea-label label-b" style="font-size:10px;">B</span> 장점</h4>
+                    <p>${item.result.ideaB.pros}</p>
+                  </div>
+                  <div class="history-card">
+                    <h4><span class="idea-label label-a" style="font-size:10px;">A</span> 단점</h4>
+                    <p>${item.result.ideaA.cons}</p>
+                  </div>
+                  <div class="history-card">
+                    <h4><span class="idea-label label-b" style="font-size:10px;">B</span> 단점</h4>
+                    <p>${item.result.ideaB.cons}</p>
+                  </div>
+                </div>
+                <div class="history-verdict">
+                  <p><strong>판정:</strong> ${item.result.verdict}</p>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      })();
+    }
+
+    function toggleHistory(i) {
+      document.getElementById('hist-' + i).classList.toggle('open');
+    }
+
+    async function deleteHistory(key) {
+      await fetch(DB_URL + '/battles/' + key + '.json', { method: 'DELETE' });
+      renderHistory();
+    }
+
+    function clearHistory() {
+      if (confirm('전체 기록을 삭제할까요?')) {
+        fetch(DB_URL + '/battles.json', { method: 'DELETE' })
+          .then(() => renderHistory());
+      }
+    }
+
+    let selectedCategory = '일반';
+
+    function toggleSelect() {
+      document.getElementById('customSelect').classList.toggle('open');
+    }
+
+    function selectCategory(value, criteria) {
+      selectedCategory = value;
+      document.getElementById('category').value = value;
+      document.getElementById('triggerLabel').textContent = value;
+      document.getElementById('triggerCriteria').textContent = criteria;
+      document.querySelectorAll('.custom-select-option').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      document.getElementById('customSelect').classList.remove('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('customSelect').contains(e.target)) {
+        document.getElementById('customSelect').classList.remove('open');
+      }
+    });
+
+    window.onload = () => {
+      const saved = localStorage.getItem("gemini_key");
+      if (saved) document.getElementById("apiKey").value = saved;
+      renderHistory();
+    };
+
+    function saveKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (key) {
+        localStorage.setItem('gemini_key', key);
+        alert('저장되었습니다!');
+      }
+    }
+
+    function getKey() {
+      return document.getElementById('apiKey').value.trim()
+        || localStorage.getItem('gemini_key') || '';
+    }
+
+    async function startBattle() {
+      const ideaA = document.getElementById('ideaA').value.trim();
+      const ideaB = document.getElementById('ideaB').value.trim();
+      const category = selectedCategory;
+      const btn = document.getElementById('battleBtn');
+      const area = document.getElementById('resultArea');
+      const apiKey = getKey();
+
+      if (!apiKey) { area.innerHTML = '<p class="error-msg">API 키를 먼저 입력해 주세요.</p>'; return; }
+      if (!ideaA || !ideaB) { area.innerHTML = '<p class="error-msg">두 아이디어를 모두 입력해 주세요.</p>'; return; }
+
+      btn.disabled = true;
+      area.innerHTML = `<div class="loading-bar"><div class="loading-bar-inner"></div></div><p class="loading-text">AI가 분석 중입니다...</p>`;
+
+      const criteriaMap = {
+        '일반': '실현 가능성, 독창성, 기대 효과 관점에서',
+        'AI 스터디 산출물': '학습 효과, 구현 난이도, 실제 활용 가능성 관점에서',
+        '넥슨 플랫폼 서비스': '유저 경험, 플랫폼 적합성, 비즈니스 임팩트 관점에서',
+        '기획': '목표 명확성, 실행 가능성, 이해관계자 설득력 관점에서',
+        '디자인': '사용자 경험, 심미성, 일관성 및 확장성 관점에서',
+        '개발': '기술 구현 난이도, 유지보수성, 확장성 관점에서',
+        '마케팅': '타겟 도달력, 브랜드 임팩트, 비용 효율 관점에서',
+        '사업': '수익성, 시장 규모, 경쟁 우위 관점에서',
+        '워크샵': '참여 유도, 학습 효과, 현장 실행 가능성 관점에서',
+        '일상생활': '편의성, 지속 가능성, 삶의 질 향상 관점에서',
+      };
+      const criteria = criteriaMap[category] || '실현 가능성, 독창성, 기대 효과 관점에서';
+
+      const prompt = `당신은 아이디어 평가 전문가입니다. 다음 두 아이디어를 분석하고 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
+
+카테고리: ${category}
+평가 기준: ${criteria}
+아이디어 A: ${ideaA}
+아이디어 B: ${ideaB}
+
+다음 JSON 구조로 응답하세요:
+{
+  "ideaA": {
+    "pros": "장점 2~3가지를 한 문단으로",
+    "cons": "단점 2~3가지를 한 문단으로",
+    "tags": ["키워드1", "키워드2", "키워드3"]
+  },
+  "ideaB": {
+    "pros": "장점 2~3가지를 한 문단으로",
+    "cons": "단점 2~3가지를 한 문단으로",
+    "tags": ["키워드1", "키워드2", "키워드3"]
+  },
+  "winner": "A 또는 B",
+  "winnerName": "승리한 아이디어 이름",
+  "verdict": "승자를 선택한 이유를 2~3문장으로"
+}`;
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0, maxOutputTokens: 8192 }
+            })
+          }
+        );
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error?.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const allParts = data.candidates?.[0]?.content?.parts || [];
+        const rawText = allParts.filter(p => !p.thought).map(p => p.text || "").join("");
+        const jsonMatch = rawText.match(/{[\s\S]*}/);
+        if (!jsonMatch) throw new Error("응답에서 JSON을 찾을 수 없습니다. 다시 시도해 주세요.");
+        const r = JSON.parse(jsonMatch[0]);
+
+        await saveHistory(ideaA, ideaB, category, r);
+        await renderHistory();
+
+        const winLabel = r.winner === "A"
+          ? '<span class="idea-label label-a">A 승리</span>'
+          : '<span class="idea-label label-b">B 승리</span>';
+
+        area.innerHTML = `
+          <div>
+            <div class="result-grid">
+              <div class="result-card">
+                <h3><span class="idea-label label-a" style="font-size:11px;">A</span> 장점</h3>
+                <p>${r.ideaA.pros}</p>
+                <div class="tag-row">${r.ideaA.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+              </div>
+              <div class="result-card">
+                <h3><span class="idea-label label-b" style="font-size:11px;">B</span> 장점</h3>
+                <p>${r.ideaB.pros}</p>
+                <div class="tag-row">${r.ideaB.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+              </div>
+              <div class="result-card">
+                <h3><span class="idea-label label-a" style="font-size:11px;">A</span> 단점</h3>
+                <p>${r.ideaA.cons}</p>
+              </div>
+              <div class="result-card">
+                <h3><span class="idea-label label-b" style="font-size:11px;">B</span> 단점</h3>
+                <p>${r.ideaB.cons}</p>
+              </div>
+            </div>
+            <div class="verdict-card">
+              <div class="verdict-badge">AI 심판 판정</div>
+              <div class="verdict-title">${winLabel} ${r.winnerName}</div>
+              <p class="verdict-reason">${r.verdict}</p>
+            </div>
+          </div>`;
+      } catch(e) {
+        area.innerHTML = `<p class="error-msg">오류: ${e.message}</p>`;
+      }
+
+      btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
